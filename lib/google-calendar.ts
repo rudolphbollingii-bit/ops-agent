@@ -11,7 +11,7 @@ export function getGoogleAuthUrl(): string {
     redirect_uri:  process.env.GOOGLE_REDIRECT_URI!,
     response_type: 'code',
     scope:         'https://www.googleapis.com/auth/calendar',
-    access_token_type: 'offline',
+    access_type: 'offline',
     prompt:        'consent',
   })
   return `https://accounts.google.com/o/oauth2/v2/auth?${params}`
