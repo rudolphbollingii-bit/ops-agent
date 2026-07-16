@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Task, Alert, ScheduleBlock, Domain, ChatMessage, Priority, BlockType, AlertSeverity } from '@/types'
+import CalendarPanel from '@/components/CalendarPanel'
 
 // ── Color maps ────────────────────────────────────────────────────────────────
 const DOMAIN_COLOR: Record<string, string> = {
@@ -138,7 +139,7 @@ export default function Dashboard() {
           {tab === 'home'     && <HomePanel     tasks={tasks} alerts={alerts} blocks={blocks} domains={domains} setTab={setTab} />}
           {tab === 'tasks'    && <TasksPanel    tasks={tasks}  domains={domains} onRefresh={load} />}
           {tab === 'alerts'   && <AlertsPanel   alerts={alerts} onRefresh={load} />}
-          {tab === 'schedule' && <SchedulePanel blocks={blocks} domains={domains} onRefresh={load} />}
+          {tab === 'schedule' && <CalendarPanel blocks={blocks} domains={domains} onRefresh={load} />}
           {tab === 'agent'    && <AgentPanel    tasks={tasks}   alerts={alerts} />}
           {tab === 'settings' && <SettingsPanel />}
         </div>
