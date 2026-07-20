@@ -150,7 +150,7 @@ export default function CalendarPanel({
     header:    { display: 'flex', alignItems: 'center', gap: 10, padding: '12px 20px', background: '#fff', borderBottom: '1px solid #F3F4F6', flexShrink: 0 },
     title:     { fontSize: 15, fontWeight: 600, color: '#111827', flex: 1 },
     navBtn:    { padding: '5px 10px', border: '1px solid #E5E7EB', borderRadius: 6, background: '#fff', cursor: 'pointer', fontSize: 13, color: '#374151' },
-    viewBtn:   (active: boolean) => ({ padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: active ? 600 : 400, background: active ? '#111827' : '#F3F4F6', color: active ? '#fff' : '#6B7280' }),
+    viewBtn:   (active: boolean): React.CSSProperties => ({ padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: active ? 600 : 400, background: active ? '#111827' : '#F3F4F6', color: active ? '#fff' : '#6B7280' }),
     body:      { flex: 1, overflow: 'auto' },
     inp:       { width: '100%', fontSize: 13, padding: '7px 10px', border: '1px solid #E5E7EB', borderRadius: 7, outline: 'none', fontFamily: 'inherit', color: '#111827', background: '#fff', boxSizing: 'border-box' as const },
   }
