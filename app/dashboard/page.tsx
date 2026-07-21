@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import CalendarPanel from '@/components/CalendarPanel'
 import { Task, Alert, ScheduleBlock, Domain, ChatMessage, Priority, BlockType, AlertSeverity } from '@/types'
 import CalendarPanel from '@/components/CalendarPanel'
 
