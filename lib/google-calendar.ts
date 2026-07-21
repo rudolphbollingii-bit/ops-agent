@@ -88,13 +88,11 @@ export async function getValidAccessToken(db: any): Promise<string | null> {
 }
 
 // ── Fetch events for a specific date ─────────────────────────────────────────
-export async function getTodayEvents(accessToken: string, date?: string) {
-  const d = date ? new Date(date) : new Date()
-  const start = new Date(d)
-  start.setHours(0, 0, 0, 0)
-  const end = new Date(d)
-  end.setHours(23, 59, 59, 999)
-
+export async function getTodayEvents(accessToken: string, startDate?: string, endDate?: string) {
+const start = startDate ? new Date(startDate) : new Date()
+start.setHours(0, 0, 0, 0)
+const end = endDate ? new Date(endDate) : new Date(start)
+end.setHours(23, 59, 59, 999)
   const params = new URLSearchParams({
     timeMin:      start.toISOString(),
     timeMax:      end.toISOString(),

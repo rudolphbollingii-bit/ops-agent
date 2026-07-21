@@ -77,7 +77,11 @@ export default function CalendarPanel({
     // Fetch per day — in a real app you'd have a range endpoint
     // For now use the blocks passed as props + fetch today
     const today = new Date().toISOString().split('T')[0]
-    const res = await fetch(`/api/schedule?date=${today}`)
+    const year = current.getFullYear()
+    const month = current.getMonth()
+    const startRange = new Date(year, month, 1).toISOString().split('T')[0]
+    const endRange = new Date(year, month + 1, 0).toISOString().split('T')[0]
+    const res = await fetch(`/api/schedule?start=${startRange}&end=${endRange}`)
     const data = await res.json()
     setAllBlocks(Array.isArray(data) ? data : blocks)
   }

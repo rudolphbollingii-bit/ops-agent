@@ -7,13 +7,15 @@ export async function GET(req: NextRequest) {
   const db = createServiceClient()
   const { searchParams } = new URL(req.url)
   const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
-
+  const startRange = searchParams.get('start') || date
+  const endRange = searchParams.get('end') || date
   // Fetch local blocks from Supabase
   const { data: blocks, error } = await db
     .from('schedule_blocks')
     .select('*, domain:domains(*)')
-    .eq('date', date)
     .order('start_time')
+    .gte('date', startRange)
+    .lte('date', endRange)
 
   if (error) return NextResponse.json({ error }, { status: 500 })
 
@@ -22,7 +24,7 @@ export async function GET(req: NextRequest) {
   try {
     const accessToken = await getValidAccessToken(db)
     if (accessToken) {
-      const allEvents = await getTodayEvents(accessToken)
+    const allEvents = await getTodayEvents(accessToken, startRange, endRange)
       // Filter to match the requested date
       gcalEvents = allEvents.filter((e: any) => {
         const eventDate = e.start?.dateTime
