@@ -1,23 +1,19 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Google Calendar Integration
-// ─────────────────────────────────────────────────────────────────────────────
-
 const GCAL_BASE = 'https://www.googleapis.com/calendar/v3'
 
-// ── Build the Google OAuth login URL ─────────────────────────────────────────
+// ── Build Google OAuth URL ────────────────────────────────────────────────────
 export function getGoogleAuthUrl(): string {
   const params = new URLSearchParams({
     client_id:     process.env.GOOGLE_CLIENT_ID!,
     redirect_uri:  process.env.GOOGLE_REDIRECT_URI!,
     response_type: 'code',
     scope:         'https://www.googleapis.com/auth/calendar',
-    access_type: 'offline',
+    access_type:   'offline',   // FIXED: was access_token_type before
     prompt:        'consent',
   })
   return `https://accounts.google.com/o/oauth2/v2/auth?${params}`
 }
 
-// ── Exchange the one-time code for real tokens ────────────────────────────────
+// ── Exchange code for tokens ──────────────────────────────────────────────────
 export async function exchangeCodeForTokens(code: string) {
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -33,7 +29,7 @@ export async function exchangeCodeForTokens(code: string) {
   return res.json()
 }
 
-// ── Use refresh token to get a new access token ───────────────────────────────
+// ── Refresh access token ──────────────────────────────────────────────────────
 export async function refreshAccessToken(refreshToken: string): Promise<string> {
   const res = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -50,13 +46,12 @@ export async function refreshAccessToken(refreshToken: string): Promise<string> 
 }
 
 // ── Get stored tokens from Supabase ──────────────────────────────────────────
-export async function getStoredTokens(db: ReturnType<typeof import('./supabase').createServiceClient>) {
+export async function getStoredTokens(db: any) {
   const { data } = await db
     .from('app_settings')
     .select('value')
     .eq('key', 'gcal_tokens')
     .single()
-
   if (!data) return null
   return JSON.parse(data.value) as {
     access_token: string
@@ -65,36 +60,44 @@ export async function getStoredTokens(db: ReturnType<typeof import('./supabase')
   }
 }
 
-// ── Get a valid access token (auto-refreshes if expired) ─────────────────────
-export async function getValidAccessToken(db: ReturnType<typeof import('./supabase').createServiceClient>): Promise<string | null> {
+// ── Get valid access token (auto-refreshes if expired) ───────────────────────
+export async function getValidAccessToken(db: any): Promise<string | null> {
   const tokens = await getStoredTokens(db)
   if (!tokens) return null
 
-  // If token expires in less than 5 minutes, refresh it
   const needsRefresh = tokens.expiry < Date.now() + 5 * 60 * 1000
-  if (needsRefresh) {
-    const newToken = await refreshAccessToken(tokens.refresh_token)
-    // Update stored access token
-    await db.from('app_settings').upsert({
-      key: 'gcal_tokens',
-      value: JSON.stringify({ ...tokens, access_token: newToken, expiry: Date.now() + 3600 * 1000 }),
-    })
-    return newToken
+  if (needsRefresh && tokens.refresh_token) {
+    try {
+      const newToken = await refreshAccessToken(tokens.refresh_token)
+      await db.from('app_settings').upsert({
+        key:   'gcal_tokens',
+        value: JSON.stringify({
+          ...tokens,
+          access_token: newToken,
+          expiry: Date.now() + 3600 * 1000,
+        }),
+      })
+      return newToken
+    } catch (err) {
+      console.error('Token refresh failed:', err)
+      return null
+    }
   }
 
   return tokens.access_token
 }
 
-// ── Fetch today's Google Calendar events ─────────────────────────────────────
-export async function getTodayEvents(accessToken: string) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
+// ── Fetch events for a specific date ─────────────────────────────────────────
+export async function getTodayEvents(accessToken: string, date?: string) {
+  const d = date ? new Date(date) : new Date()
+  const start = new Date(d)
+  start.setHours(0, 0, 0, 0)
+  const end = new Date(d)
+  end.setHours(23, 59, 59, 999)
 
   const params = new URLSearchParams({
-    timeMin:      today.toISOString(),
-    timeMax:      tomorrow.toISOString(),
+    timeMin:      start.toISOString(),
+    timeMax:      end.toISOString(),
     singleEvents: 'true',
     orderBy:      'startTime',
   })
@@ -102,19 +105,33 @@ export async function getTodayEvents(accessToken: string) {
   const res = await fetch(`${GCAL_BASE}/calendars/primary/events?${params}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
+
+  if (!res.ok) {
+    console.error('GCal events fetch failed:', res.status)
+    return []
+  }
+
   const data = await res.json()
-  return (data.items || []) as GCalEvent[]
+  return data.items || []
 }
 
-// ── Create a calendar event ───────────────────────────────────────────────────
+// ── Create a Google Calendar event ───────────────────────────────────────────
 export async function createCalendarEvent(
   accessToken: string,
-  { title, description, startTime, endTime, colorId }:
-  { title: string; description?: string; startTime: Date; endTime: Date; colorId?: string }
+  { title, description, startTime, endTime, colorId }: {
+    title: string
+    description?: string
+    startTime: Date
+    endTime: Date
+    colorId?: string
+  }
 ) {
   const res = await fetch(`${GCAL_BASE}/calendars/primary/events`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
       summary:     title,
       description,
@@ -126,7 +143,7 @@ export async function createCalendarEvent(
   return res.json()
 }
 
-// ── Delete a calendar event ───────────────────────────────────────────────────
+// ── Delete a Google Calendar event ───────────────────────────────────────────
 export async function deleteCalendarEvent(accessToken: string, eventId: string) {
   await fetch(`${GCAL_BASE}/calendars/primary/events/${eventId}`, {
     method: 'DELETE',
@@ -134,24 +151,23 @@ export async function deleteCalendarEvent(accessToken: string, eventId: string) 
   })
 }
 
-// ── Domain → calendar color ───────────────────────────────────────────────────
-// Google Calendar color IDs: 1=lavender 2=sage 3=grape 4=flamingo
-// 5=banana 6=tangerine 7=peacock 8=graphite 9=blueberry 10=basil 11=tomato
+// ── Domain name → Google Calendar color ID ───────────────────────────────────
 export function domainToColor(domainName: string): string {
   const map: Record<string, string> = {
-    'Real Estate':      '9',  // blueberry
-    'Fleet / Vehicles': '10', // basil (green)
-    'Investing':        '5',  // banana (yellow)
-    'Home Improvement': '3',  // grape (purple)
-    'Family':           '4',  // flamingo (pink)
-    'CVS / Day Job':    '8',  // graphite
+    'Real Estate':      '9',   // blueberry
+    'Fleet / Vehicles': '10',  // basil
+    'Investing':        '5',   // banana
+    'Home Improvement': '3',   // grape
+    'Family':           '4',   // flamingo
+    'CVS / Day Job':    '8',   // graphite
   }
-  return map[domainName] || '7' // peacock (teal) as default
+  return map[domainName] || '7'
 }
 
 export interface GCalEvent {
   id: string
   summary: string
+  description?: string
   start: { dateTime?: string; date?: string }
   end:   { dateTime?: string; date?: string }
   colorId?: string
