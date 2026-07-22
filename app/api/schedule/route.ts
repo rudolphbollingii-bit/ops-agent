@@ -92,9 +92,8 @@ export async function POST(req: NextRequest) {
   try {
     const accessToken = await getValidAccessToken(db)
     if (accessToken && block) {
-      const startDateTime = new Date(`${block.date}T${block.start_time}:00`)
-      const endDateTime   = new Date(`${block.date}T${block.end_time}:00`)
-
+    const startDateTime = new Date(`${block.date}T${block.start_time.slice(0,5)}:00-04:00`)
+    const endDateTime   = new Date(`${block.date}T${block.end_time.slice(0,5)}:00-04:00`)
       const colorId = block.domain ? domainToColor(block.domain.name) : '7'
 
       const gcalEvent = await createCalendarEvent(accessToken, {
