@@ -442,7 +442,7 @@ function SchedulePanel({ blocks, domains, onRefresh }: { blocks: ScheduleBlock[]
   }
 
   const BLOCK_LABEL: Record<BlockType, string> = {
-    deep_work: 'Deep work', admin: 'Admin', family: 'Family', health: 'Health', buffer: 'Buffer',
+    deep_work: 'Deep work', admin: 'Admin', family: 'Family', health: 'Health', buffer: 'Buffer', google: 'Google Calendar',
   }
 
   return (
@@ -463,7 +463,7 @@ function SchedulePanel({ blocks, domains, onRefresh }: { blocks: ScheduleBlock[]
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
             <select value={form.block_type} onChange={e => setForm(p => ({ ...p, block_type: e.target.value as BlockType }))} style={inp}>
-              {(Object.keys(BLOCK_LABEL) as BlockType[]).map(k => <option key={k} value={k}>{BLOCK_LABEL[k]}</option>)}
+              {(Object.keys(BLOCK_LABEL) as BlockType[]).filter(k => k !== 'google').map(k => <option key={k} value={k}>{BLOCK_LABEL[k]}</option>)}
             </select>
             <select value={form.domain_id} onChange={e => setForm(p => ({ ...p, domain_id: e.target.value }))} style={inp}>
               <option value="">Domain (optional)</option>
