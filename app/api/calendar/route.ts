@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
 import { getValidAccessToken, getTodayEvents, createCalendarEvent, deleteCalendarEvent, domainToColor } from '@/lib/google-calendar'
 
-// GET — check connection status + fetch today's events
-export async function GET() {
+// GET — check connection status + fetch events for a given date (defaults to today)
+export async function GET(req: NextRequest) {
   const db          = createServiceClient()
   const accessToken = await getValidAccessToken(db)
 
@@ -11,8 +11,11 @@ export async function GET() {
     return NextResponse.json({ connected: false, events: [] })
   }
 
+  const { searchParams } = new URL(req.url)
+  const date = searchParams.get('date') || undefined
+
   try {
-    const events = await getTodayEvents(accessToken)
+    const events = await getTodayEvents(accessToken, date, date)
     return NextResponse.json({ connected: true, events })
   } catch {
     return NextResponse.json({ connected: false, events: [] })
