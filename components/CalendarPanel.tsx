@@ -3,6 +3,15 @@
 import { useState, useEffect } from 'react'
 import { ScheduleBlock, Domain } from '@/types'
 
+// Format a Date as YYYY-MM-DD using LOCAL time (toISOString() converts to UTC,
+// which rolls over to the next day in the evening for US time zones — this avoids that bug)
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 // ── Color maps ────────────────────────────────────────────────────────────────
 const BLOCK_COLOR: Record<string, string> = {
   deep_work: '#2563EB',
@@ -73,7 +82,7 @@ export default function CalendarPanel({
 
   const loadBlocks = async () => {
     // Fetch whatever date is currently being viewed (fixes blocks only ever showing for today)
-    const dateStr = current.toISOString().split('T')[0]
+    const dateStr = toLocalDateStr(current)
 
     try {
       const [scheduleRes, gcalRes] = await Promise.all([
@@ -90,7 +99,7 @@ export default function CalendarPanel({
         const dEnd = new Date(endDateTime)
         return {
           id: `gcal-${e.id}`,
-          date: d.toISOString().split('T')[0],
+          date: toLocalDateStr(d),
           start_time: d.toTimeString().slice(0, 8),
           end_time: dEnd.toTimeString().slice(0, 8),
           title: e.summary || '(No title)',
@@ -110,12 +119,12 @@ export default function CalendarPanel({
   }
 
   const blocksForDate = (d: Date) => {
-    const dateStr = d.toISOString().split('T')[0]
+    const dateStr = toLocalDateStr(d)
     return allBlocks.filter(b => b.date === dateStr)
   }
 
   const addBlock = async (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0]
+    const dateStr = toLocalDateStr(date)
     await fetch('/api/schedule', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

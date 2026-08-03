@@ -4,6 +4,15 @@ import { useState, useEffect, useRef } from 'react'
 import CalendarPanel from '@/components/CalendarPanel'
 import { Task, Alert, ScheduleBlock, Domain, ChatMessage, Priority, BlockType, AlertSeverity } from '@/types'
 
+// Format a Date as YYYY-MM-DD using LOCAL time (toISOString() converts to UTC,
+// which rolls over to the next day in the evening for US time zones — this avoids that bug)
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 // ── Color maps ────────────────────────────────────────────────────────────────
 const DOMAIN_COLOR: Record<string, string> = {
   blue: '#2563EB', green: '#16A34A', amber: '#D97706',
@@ -39,7 +48,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = toLocalDateStr(new Date())
     const [t, a, b, d] = await Promise.all([
       fetch('/api/tasks').then(r => r.json()),
       fetch('/api/alerts').then(r => r.json()),
@@ -423,7 +432,7 @@ function AlertsPanel({ alerts, onRefresh }: { alerts: Alert[], onRefresh: () => 
 function SchedulePanel({ blocks, domains, onRefresh }: { blocks: ScheduleBlock[], domains: Domain[], onRefresh: () => void }) {
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm] = useState({ title: '', block_type: 'deep_work' as BlockType, start_time: '', end_time: '', domain_id: '', protected: false, notes: '' })
-  const today = new Date().toISOString().split('T')[0]
+  const today = toLocalDateStr(new Date())
 
   const add = async () => {
     if (!form.title || !form.start_time || !form.end_time) return
