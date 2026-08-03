@@ -1,6 +1,6 @@
 export type Priority = 'high' | 'medium' | 'low'
 export type AlertSeverity = 'high' | 'medium' | 'info'
-export type BlockType = 'deep_work' | 'admin' | 'family' | 'health' | 'buffer'
+export type BlockType = 'deep_work' | 'admin' | 'family' | 'health' | 'buffer' | 'google'
 
 export interface Domain {
   id: string

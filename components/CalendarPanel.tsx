@@ -97,6 +97,8 @@ export default function CalendarPanel({
           block_type: 'google',
           domain_id: null,
           protected: true,
+          notes: null,
+          created_at: new Date().toISOString(),
         } as ScheduleBlock
       })
 
