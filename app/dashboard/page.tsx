@@ -13,7 +13,7 @@ const PRI_BG: Record<Priority, string>   = { high: '#FEF2F2', medium: '#FFFBEB',
 const PRI_TX: Record<Priority, string>   = { high: '#B91C1C', medium: '#92400E', low: '#166534' }
 const BLOCK_COLOR: Record<BlockType, string> = {
   deep_work: '#2563EB', admin: '#D97706', family: '#DB2777',
-  health: '#16A34A', buffer: '#D1D5DB',
+  health: '#16A34A', buffer: '#D1D5DB', google: '#7C3AED',
 }
 const SEV_COLOR: Record<string, string>  = { high: '#EF4444', medium: '#F59E0B', info: '#3B82F6' }
 const SEV_BG: Record<string, string>     = { high: '#FEE2E2', medium: '#FEF3C7', info: '#DBEAFE' }
