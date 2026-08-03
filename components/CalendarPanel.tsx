@@ -10,6 +10,7 @@ const BLOCK_COLOR: Record<string, string> = {
   family:    '#DB2777',
   health:    '#16A34A',
   buffer:    '#9CA3AF',
+  google:    '#7C3AED',
 }
 
 const BLOCK_BG: Record<string, string> = {
@@ -18,6 +19,7 @@ const BLOCK_BG: Record<string, string> = {
   family:    '#FDF2F8',
   health:    '#F0FDF4',
   buffer:    '#F9FAFB',
+  google:    '#F5F3FF',
 }
 
 type CalView = 'day' | 'week' | 'month' | 'year'
@@ -70,16 +72,39 @@ export default function CalendarPanel({
   }, [current, view])
 
   const loadBlocks = async () => {
-    // For simplicity load a wide range and filter client side
-    const start = new Date(current.getFullYear(), current.getMonth() - 1, 1)
-    const end   = new Date(current.getFullYear(), current.getMonth() + 2, 0)
+    // Fetch whatever date is currently being viewed (fixes blocks only ever showing for today)
+    const dateStr = current.toISOString().split('T')[0]
 
-    // Fetch per day — in a real app you'd have a range endpoint
-    // For now use the blocks passed as props + fetch today
-    const today = new Date().toISOString().split('T')[0]
-    const res = await fetch(`/api/schedule?date=${today}`)
-    const data = await res.json()
-    setAllBlocks(Array.isArray(data) ? data : blocks)
+    try {
+      const [scheduleRes, gcalRes] = await Promise.all([
+        fetch(`/api/schedule?date=${dateStr}`).then(r => r.json()),
+        fetch(`/api/calendar?date=${dateStr}`).then(r => r.json()).catch(() => ({ connected: false, events: [] })),
+      ])
+
+      const supabaseBlocks: ScheduleBlock[] = Array.isArray(scheduleRes) ? scheduleRes : blocks
+
+      const gcalBlocks: ScheduleBlock[] = (gcalRes?.events || []).map((e: any) => {
+        const startDateTime = e.start?.dateTime || e.start?.date
+        const endDateTime   = e.end?.dateTime || e.end?.date
+        const d = new Date(startDateTime)
+        const dEnd = new Date(endDateTime)
+        return {
+          id: `gcal-${e.id}`,
+          date: d.toISOString().split('T')[0],
+          start_time: d.toTimeString().slice(0, 8),
+          end_time: dEnd.toTimeString().slice(0, 8),
+          title: e.summary || '(No title)',
+          block_type: 'google',
+          domain_id: null,
+          protected: true,
+        } as ScheduleBlock
+      })
+
+      setAllBlocks([...supabaseBlocks, ...gcalBlocks])
+    } catch (err) {
+      console.error('Failed to load blocks:', err)
+      setAllBlocks(blocks)
+    }
   }
 
   const blocksForDate = (d: Date) => {
